@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Shop LocalMart: browse products stocked at your local warehouse and manage your cart."
+    />
+    <meta name="theme-color" content="#f6f7f2" />
+    <title>LocalMart — Good things, close by</title>
+    <link rel="stylesheet" href="/app/styles.css" />
+    <script src="/app/app.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/app" aria-label="LocalMart home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40" fill="none">
+            <path d="M8 17h24l-2 17H10L8 17Z" fill="currentColor" />
+            <path d="M14 18v-5a6 6 0 0 1 12 0v5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M16 25c1.8-2 6.2-2 8 0" stroke="#F6F7F2" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </span>
+        <span class="brand-name">local<span>mart</span></span>
+      </a>
+
+      <div class="header-location">
+        <span class="location-caption">DELIVERING NEAR</span>
+        <label class="location-select-wrap" for="location-select">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+            <path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z" stroke="currentColor" stroke-width="1.8" />
+            <circle cx="12" cy="10" r="2.2" stroke="currentColor" stroke-width="1.8" />
+          </svg>
+          <select id="location-select" aria-label="Choose your location">
+            <option value="">Loading locations…</option>
+          </select>
+          <span class="select-caret" aria-hidden="true">⌄</span>
+        </label>
+      </div>
+
+      <label class="search-box" for="product-search">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+          <circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4.2 4.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input id="product-search" type="search" placeholder="Find something lovely…" autocomplete="off" />
+        <kbd>/</kbd>
+      </label>
+
+      <div class="header-actions">
+        <button class="icon-label-button" id="orders-button" type="button" aria-label="View your orders">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+            <path d="M5 7.5h14v13H5zM8 7V5a4 4 0 0 1 8 0v2" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+            <path d="M9 12h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+          </svg>
+          <span>Orders</span>
+        </button>
+        <button class="account-button" id="account-button" type="button">
+          <span class="avatar" id="account-avatar" aria-hidden="true">G</span>
+          <span id="account-label">Sign in</span>
+        </button>
+        <button class="mobile-cart-button" id="mobile-cart-button" type="button" aria-label="Jump to your cart">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+            <path d="M3 4h2l2.1 11.3a2 2 0 0 0 2 1.7h8.4a2 2 0 0 0 1.9-1.5L21 9H6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            <circle cx="10" cy="20" r="1" fill="currentColor" />
+            <circle cx="18" cy="20" r="1" fill="currentColor" />
+          </svg>
+          <span class="cart-count" id="mobile-cart-count">0</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="page-shell">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <span class="eyebrow"><span class="eyebrow-dot"></span> YOUR NEIGHBORHOOD, WELL STOCKED</span>
+          <h1 id="hero-title">Good things,<br />close to <span>home.</span></h1>
+          <p>Thoughtful finds from the warehouses around you. Shop local, make it easy.</p>
+          <a class="hero-link" href="#shop">Explore what's in stock <span aria-hidden="true">↘</span></a>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="sun-disc"></div>
+          <div class="hero-blob"></div>
+          <div class="hero-leaf leaf-one"></div>
+          <div class="hero-leaf leaf-two"></div>
+          <div class="hero-bag">
+            <div class="bag-handle"></div>
+            <div class="bag-front">
+              <span class="bag-sparkle">✳</span>
+              <span class="bag-label">good<br />stuff</span>
+            </div>
+          </div>
+          <div class="hero-orange"></div>
+          <div class="hero-flower">✳</div>
+        </div>
+        <div class="hero-note"><span aria-hidden="true">✳</span> A little closer. A lot more convenient.</div>
+      </section>
+
+      <aside class="demo-notice" role="note">
+        <span class="notice-icon" aria-hidden="true">!</span>
+        <p><strong>Learning project demo.</strong> Sign-in does not create a secure session yet. Don’t use real passwords or expose this API to untrusted users.</p>
+        <a href="/docs" target="_blank" rel="noreferrer">API docs <span aria-hidden="true">↗</span></a>
+      </aside>
+
+      <section class="shop-layout" id="shop" aria-label="Shop and cart">
+        <div class="catalog">
+          <div class="section-heading">
+            <div>
+              <span class="section-kicker">PICKED FOR YOUR PLACE</span>
+              <h2>Shop the neighborhood</h2>
+              <p class="section-subtitle" id="catalog-subtitle">A few good finds, close by.</p>
+            </div>
+            <button class="text-button" id="refresh-button" type="button" aria-label="Refresh products">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                <path d="M20 11a8 8 0 0 0-14.5-4L4 9m0 0V5m0 4h4m-4 4a8 8 0 0 0 14.5 4L20 15m0 0v4m0-4h-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              Refresh
+            </button>
+          </div>
+          <div class="catalog-meta">
+            <span class="result-count" id="result-count">Loading local stock…</span>
+            <span class="stock-note"><span class="stock-dot"></span> Stock at your selected location</span>
+          </div>
+          <div class="product-grid" id="product-grid" aria-live="polite" aria-busy="true"></div>
+          <div class="empty-state hidden" id="catalog-empty">
+            <span class="empty-illustration" aria-hidden="true">⌕</span>
+            <h3 id="empty-title">Nothing on this shelf yet</h3>
+            <p id="empty-message">Try another search or choose a different location.</p>
+          </div>
+        </div>
+
+        <aside class="cart-panel" id="cart-panel" aria-labelledby="cart-title">
+          <div class="cart-heading">
+            <div class="cart-heading-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M3 4h2l2.1 11.3a2 2 0 0 0 2 1.7h8.4a2 2 0 0 0 1.9-1.5L21 9H6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                <circle cx="10" cy="20" r="1" fill="currentColor" />
+                <circle cx="18" cy="20" r="1" fill="currentColor" />
+              </svg>
+            </div>
+            <div>
+              <h2 id="cart-title">Your basket</h2>
+              <span id="cart-item-count">0 items</span>
+            </div>
+            <span class="basket-sparkle" aria-hidden="true">✳</span>
+          </div>
+
+          <div class="cart-content" id="cart-content" aria-live="polite"></div>
+
+          <div class="cart-footer" id="cart-footer">
+            <div class="subtotal-row"><span>Subtotal</span><strong id="cart-total">$0.00</strong></div>
+            <p class="checkout-note">Local stock is confirmed when you place your order.</p>
+            <button class="checkout-button" id="checkout-button" type="button" disabled>
+              Continue to checkout <span aria-hidden="true">→</span>
+            </button>
+            <p class="secure-note"><span aria-hidden="true">♡</span> Your order, fulfilled locally.</p>
+          </div>
+        </aside>
+      </section>
+
+      <footer class="site-footer">
+        <a class="brand footer-brand" href="/app">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none">
+              <path d="M8 17h24l-2 17H10L8 17Z" fill="currentColor" />
+              <path d="M14 18v-5a6 6 0 0 1 12 0v5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+              <path d="M16 25c1.8-2 6.2-2 8 0" stroke="#F6F7F2" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </span>
+          <span class="brand-name">local<span>mart</span></span>
+        </a>
+        <p>Little joys, from just around the corner.</p>
+        <a href="/redoc" target="_blank" rel="noreferrer">Built with FastAPI <span aria-hidden="true">↗</span></a>
+      </footer>
+    </main>
+
+    <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+    <dialog class="app-dialog" id="account-dialog" aria-labelledby="account-dialog-title">
+      <div class="dialog-header">
+        <div>
+          <span class="section-kicker">YOUR LOCALMART</span>
+          <h2 id="account-dialog-title">Come on in</h2>
+        </div>
+        <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
+      </div>
+      <div id="account-panel"></div>
+    </dialog>
+
+    <dialog class="app-dialog orders-dialog" id="orders-dialog" aria-labelledby="orders-dialog-title">
+      <div class="dialog-header">
+        <div>
+          <span class="section-kicker">THE GOOD STUFF YOU FOUND</span>
+          <h2 id="orders-dialog-title">Your orders</h2>
+        </div>
+        <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
+      </div>
+      <div id="orders-content"></div>
+    </dialog>
+  </body>
+</html>
