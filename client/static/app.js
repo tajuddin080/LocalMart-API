@@ -10,6 +10,10 @@ const state = {
   accountTab: "login",
   productRequest: 0,
   busy: false,
+  adminWarehouseId: "",
+  adminInventory: [],
+  adminLoading: false,
+  adminRequest: 0,
 };
 
 const palette = [
@@ -40,6 +44,14 @@ const elements = {
   accountAvatar: document.querySelector("#account-avatar"),
   accountDialog: document.querySelector("#account-dialog"),
   accountPanel: document.querySelector("#account-panel"),
+  adminButton: document.querySelector("#admin-button"),
+  adminDialog: document.querySelector("#inventory-dialog"),
+  adminWarehouse: document.querySelector("#admin-warehouse-select"),
+  adminInventoryCount: document.querySelector("#admin-inventory-count"),
+  adminStatus: document.querySelector("#admin-status"),
+  inventoryTable: document.querySelector("#inventory-table-wrap"),
+  adminAddForm: document.querySelector("#admin-add-form"),
+  adminRefresh: document.querySelector("#admin-refresh-button"),
   ordersDialog: document.querySelector("#orders-dialog"),
   ordersContent: document.querySelector("#orders-content"),
   toastRegion: document.querySelector("#toast-region"),
@@ -130,12 +142,22 @@ function selectedLocation() {
   return state.location;
 }
 
+function isAdmin() {
+  return String(state.user?.ROLE || "").toLowerCase() === "admin";
+}
+
+function visibleWarehouses() {
+  if (!isAdmin()) return state.warehouses;
+  return state.warehouses.filter((warehouse) => warehouse.LOCATION === state.user.LOCATION);
+}
+
 function renderWarehouses() {
-  const locations = [...new Set(state.warehouses.map((warehouse) => warehouse.LOCATION).filter(Boolean))];
+  const locations = [...new Set(visibleWarehouses().map((warehouse) => warehouse.LOCATION).filter(Boolean))];
   elements.location.replaceChildren();
   if (!locations.length) {
     const option = new Option("No locations available", "");
     elements.location.add(option);
+    state.location = "";
     elements.location.disabled = true;
     return;
   }
@@ -311,6 +333,9 @@ function renderCart() {
 }
 
 function updateAccountHeader() {
+  document.body.classList.toggle("is-admin", isAdmin());
+  document.body.classList.toggle("signed-in", Boolean(state.user));
+  elements.adminButton.classList.toggle("hidden", !isAdmin());
   if (state.user) {
     const name = state.user.UID || state.user.UEMAIL || "Customer";
     elements.accountLabel.textContent = name;
@@ -517,6 +542,27 @@ async function submitRegistration(event) {
 async function beginCustomerSession(user) {
   state.user = user;
   updateAccountHeader();
+  if (isAdmin()) {
+    state.cart = null;
+    state.location = user.LOCATION || "";
+    renderWarehouses();
+    elements.location.disabled = true;
+    if (visibleWarehouses().length) {
+      await loadProducts();
+      elements.catalogSubtitle.textContent = `Admin inventory for ${user.LOCATION}.`;
+    } else {
+      state.products = [];
+      renderProducts();
+      elements.catalogSubtitle.textContent = "No warehouse matches this admin account location.";
+      elements.emptyTitle.textContent = "No warehouse at your assigned location";
+      elements.emptyMessage.textContent = "Ask the project administrator to assign this account to an existing warehouse location.";
+      showToast("No warehouse is configured at your admin account location.", "error");
+    }
+    elements.accountDialog.close();
+    openAdminDialog();
+    return;
+  }
+
   const hasMatchingWarehouse = state.warehouses.some((warehouse) => warehouse.LOCATION === user.LOCATION);
   if (user.LOCATION && hasMatchingWarehouse) {
     state.location = user.LOCATION;
@@ -548,6 +594,7 @@ async function beginCustomerSession(user) {
 }
 
 function signOut() {
+  if (elements.adminDialog.open) elements.adminDialog.close();
   state.user = null;
   state.cart = null;
   updateAccountHeader();
@@ -563,6 +610,181 @@ function readableDate(value) {
   if (!value) return "Date unavailable";
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(date);
+}
+
+function setAdminStatus(message, isError = false) {
+  elements.adminStatus.textContent = message;
+  elements.adminStatus.classList.toggle("error", isError);
+}
+
+function renderAdminWarehouses() {
+  const warehouses = visibleWarehouses();
+  const selectedExists = warehouses.some((warehouse) => warehouse.WID === state.adminWarehouseId);
+  if (!selectedExists) state.adminWarehouseId = warehouses[0]?.WID || "";
+  elements.adminWarehouse.replaceChildren();
+
+  for (const warehouse of warehouses) {
+    elements.adminWarehouse.add(new Option(`${warehouse.WID} · ${warehouse.LOCATION}`, warehouse.WID));
+  }
+  elements.adminWarehouse.value = state.adminWarehouseId;
+  elements.adminWarehouse.disabled = !warehouses.length;
+  elements.adminAddForm.querySelector('[type="submit"]').disabled = !warehouses.length || state.adminLoading;
+}
+
+async function loadAdminInventory() {
+  if (!isAdmin()) return;
+  const requestId = ++state.adminRequest;
+  const warehouse = visibleWarehouses().find((item) => item.WID === state.adminWarehouseId);
+  state.adminInventory = [];
+  elements.adminInventoryCount.textContent = warehouse ? `Loading stock for ${warehouse.WID}…` : "No warehouses are available.";
+  elements.inventoryTable.innerHTML = '<div class="inventory-empty">Loading warehouse stock…</div>';
+  renderAdminWarehouses();
+  if (!warehouse) {
+    state.adminLoading = false;
+    elements.adminRefresh.disabled = false;
+    renderAdminWarehouses();
+    elements.inventoryTable.innerHTML = '<div class="inventory-empty">Add a warehouse before managing stock.</div>';
+    return;
+  }
+
+  state.adminLoading = true;
+  elements.adminRefresh.disabled = true;
+  renderAdminWarehouses();
+  try {
+    const query = new URLSearchParams({ Location: warehouse.LOCATION });
+    const products = await apiRequest(`/product?${query.toString()}`);
+    if (requestId !== state.adminRequest) return false;
+    state.adminInventory = Array.isArray(products)
+      ? products.filter((product) => product.WID === warehouse.WID)
+      : [];
+    renderAdminInventory(warehouse);
+    setAdminStatus("");
+    return true;
+  } catch (error) {
+    if (requestId !== state.adminRequest) return false;
+    elements.adminInventoryCount.textContent = `Could not load stock for ${warehouse.WID}.`;
+    elements.inventoryTable.innerHTML = `<div class="inventory-empty">${escapeHtml(error.message)}</div>`;
+    setAdminStatus(error.message, true);
+    return false;
+  } finally {
+    if (requestId === state.adminRequest) {
+      state.adminLoading = false;
+      elements.adminRefresh.disabled = false;
+      renderAdminWarehouses();
+    }
+  }
+}
+
+function renderAdminInventory(warehouse) {
+  const records = state.adminInventory;
+  elements.adminInventoryCount.textContent = `${records.length} ${records.length === 1 ? "stock record" : "stock records"} · ${warehouse.WID} · ${warehouse.LOCATION}`;
+  if (!records.length) {
+    elements.inventoryTable.innerHTML = '<div class="inventory-empty">This warehouse has no products yet. Use the form below to add stock.</div>';
+    return;
+  }
+
+  elements.inventoryTable.innerHTML = `
+    <table class="inventory-table">
+      <thead><tr><th>Product</th><th>Product ID</th><th>Price</th><th>Quantity</th><th>Actions</th></tr></thead>
+      <tbody>${records.map((product, index) => `
+        <tr data-inventory-index="${index}">
+          <td class="inventory-product-name">${escapeHtml(product.PNAME)}</td>
+          <td>${escapeHtml(product.PID)}</td>
+          <td class="inventory-product-price">${formatMoney(product.PPRICE)}</td>
+          <td><input class="inventory-quantity-input" type="number" min="0" step="1" value="${Number(product.PQUANTITY)}" aria-label="Stock quantity for ${escapeHtml(product.PNAME)}" /></td>
+          <td><div class="inventory-row-actions">
+            <button class="inventory-save-button" type="button" data-action="save">Save quantity</button>
+            <button class="inventory-delete-button" type="button" data-action="delete">Remove</button>
+          </div></td>
+        </tr>`).join("")}</tbody>
+    </table>`;
+
+  elements.inventoryTable.querySelectorAll("[data-inventory-index]").forEach((row) => {
+    const product = records[Number(row.dataset.inventoryIndex)];
+    row.querySelector('[data-action="save"]').addEventListener("click", () => saveAdminQuantity(row, product));
+    row.querySelector('[data-action="delete"]').addEventListener("click", () => deleteAdminInventory(product));
+  });
+}
+
+async function saveAdminQuantity(row, product) {
+  const input = row.querySelector(".inventory-quantity-input");
+  const quantity = Number(input.value);
+  if (!Number.isInteger(quantity) || quantity < 0) {
+    setAdminStatus("Enter a whole-number quantity of zero or more.", true);
+    input.focus();
+    return;
+  }
+
+  const button = row.querySelector('[data-action="save"]');
+  button.disabled = true;
+  setAdminStatus("");
+  try {
+    await apiRequest("/updateproduct", {
+      method: "PUT",
+      body: JSON.stringify({ PID: product.PID, WID: product.WID, PQUANTITY: quantity }),
+    });
+    const refreshed = await loadAdminInventory();
+    await loadProducts();
+    if (refreshed) setAdminStatus(`Stock for ${product.PID} updated to ${quantity}.`);
+  } catch (error) {
+    setAdminStatus(error.message, true);
+    button.disabled = false;
+  }
+}
+
+async function deleteAdminInventory(product) {
+  if (!window.confirm(`Remove ${product.PNAME} (${product.PID}) from warehouse ${product.WID}?`)) return;
+  setAdminStatus("");
+  try {
+    const query = new URLSearchParams({ p_id: product.PID, w_id: product.WID });
+    await apiRequest(`/deleteproduct?${query.toString()}`, { method: "DELETE" });
+    const refreshed = await loadAdminInventory();
+    await loadProducts();
+    if (refreshed) setAdminStatus(`${product.PID} was removed from ${product.WID}.`);
+  } catch (error) {
+    setAdminStatus(error.message, true);
+  }
+}
+
+function openAdminDialog() {
+  if (!isAdmin()) return;
+  renderAdminWarehouses();
+  elements.adminDialog.showModal();
+  loadAdminInventory();
+}
+
+async function addAdminInventory(event) {
+  event.preventDefault();
+  if (!isAdmin() || state.adminLoading) return;
+  const warehouse = visibleWarehouses().find((item) => item.WID === state.adminWarehouseId);
+  if (!warehouse) {
+    setAdminStatus("Choose an available warehouse first.", true);
+    return;
+  }
+
+  const formData = new FormData(elements.adminAddForm);
+  const submit = elements.adminAddForm.querySelector('[type="submit"]');
+  submit.disabled = true;
+  setAdminStatus("");
+  try {
+    await apiRequest("/addproduct", {
+      method: "POST",
+      body: JSON.stringify([{
+        PID: String(formData.get("pid")).trim(),
+        PNAME: String(formData.get("name")).trim(),
+        PPRICE: Number(formData.get("price")),
+        PQUANTITY: Number(formData.get("quantity")),
+        WID: warehouse.WID,
+      }]),
+    });
+    elements.adminAddForm.reset();
+    const refreshed = await loadAdminInventory();
+    await loadProducts();
+    if (refreshed) setAdminStatus(`Stock added to warehouse ${warehouse.WID}.`);
+  } catch (error) {
+    setAdminStatus(error.message, true);
+    submit.disabled = false;
+  }
 }
 
 async function openOrdersDialog() {
@@ -641,12 +863,19 @@ async function checkout() {
 document.querySelectorAll("[data-close-dialog]").forEach((button) => {
   button.addEventListener("click", () => button.closest("dialog").close());
 });
-for (const dialog of [elements.accountDialog, elements.ordersDialog]) {
+for (const dialog of [elements.accountDialog, elements.ordersDialog, elements.adminDialog]) {
   dialog.addEventListener("click", (event) => {
     if (event.target === dialog) dialog.close();
   });
 }
 elements.accountButton.addEventListener("click", openAccountDialog);
+elements.adminButton.addEventListener("click", openAdminDialog);
+elements.adminWarehouse.addEventListener("change", () => {
+  state.adminWarehouseId = elements.adminWarehouse.value;
+  loadAdminInventory();
+});
+elements.adminRefresh.addEventListener("click", loadAdminInventory);
+elements.adminAddForm.addEventListener("submit", addAdminInventory);
 document.querySelector("#orders-button").addEventListener("click", openOrdersDialog);
 document.querySelector("#mobile-cart-button").addEventListener("click", () => elements.cartPanel.scrollIntoView({ behavior: "smooth", block: "start" }));
 elements.search.addEventListener("input", renderProducts);

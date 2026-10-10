@@ -49,6 +49,13 @@
       </label>
 
       <div class="header-actions">
+        <button class="admin-button hidden" id="admin-button" type="button" aria-label="Manage warehouse inventory">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+            <path d="M4 20V9l8-5 8 5v11h-6v-6h-4v6H4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+            <path d="M9 10h.01M15 10h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+          </svg>
+          <span>Inventory</span>
+        </button>
         <button class="icon-label-button" id="orders-button" type="button" aria-label="View your orders">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
             <path d="M5 7.5h14v13H5zM8 7V5a4 4 0 0 1 8 0v2" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
@@ -197,6 +204,56 @@
         <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
       </div>
       <div id="orders-content"></div>
+    </dialog>
+
+    <dialog class="app-dialog inventory-dialog" id="inventory-dialog" aria-labelledby="inventory-dialog-title">
+      <div class="dialog-header">
+        <div>
+          <span class="section-kicker">WAREHOUSE MANAGEMENT</span>
+          <h2 id="inventory-dialog-title">Inventory</h2>
+        </div>
+        <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
+      </div>
+      <aside class="admin-demo-warning" role="note">
+        <strong>Demo only — not access-controlled.</strong>
+        <span>The API does not verify admin roles on inventory changes. Anyone who can reach this API can also change stock directly. Don’t expose it to untrusted users.</span>
+      </aside>
+      <label class="admin-warehouse-field" for="admin-warehouse-select">
+        <span>Selected warehouse</span>
+        <select id="admin-warehouse-select"></select>
+      </label>
+      <div class="admin-inventory-heading">
+        <div>
+          <h3>Products in this warehouse</h3>
+          <p id="admin-inventory-count" aria-live="polite">Choose a warehouse to see its stock.</p>
+        </div>
+        <button class="secondary-button" id="admin-refresh-button" type="button">Refresh stock</button>
+      </div>
+      <p class="admin-status" id="admin-status" aria-live="polite" role="status"></p>
+      <div class="inventory-table-wrap" id="inventory-table-wrap"></div>
+      <form class="admin-add-form" id="admin-add-form">
+        <div class="admin-add-heading">
+          <div>
+            <h3>Add product stock</h3>
+            <p>Use an existing product ID with the same name and price, or enter a new one. Product names and prices are shared details and can’t be edited through the current API.</p>
+          </div>
+        </div>
+        <div class="admin-add-fields">
+          <label class="form-field">Product ID
+            <input name="pid" type="text" required minlength="2" maxlength="50" pattern="P.+" placeholder="P101" />
+          </label>
+          <label class="form-field">Product name
+            <input name="name" type="text" required maxlength="200" placeholder="Wireless Mouse" />
+          </label>
+          <label class="form-field">Price (₹)
+            <input name="price" type="number" required min="0" step="0.01" placeholder="799.00" />
+          </label>
+          <label class="form-field">Starting quantity
+            <input name="quantity" type="number" required min="0" step="1" placeholder="20" />
+          </label>
+          <button class="form-submit admin-add-submit" type="submit">Add to warehouse <span aria-hidden="true">→</span></button>
+        </div>
+      </form>
     </dialog>
   </body>
 </html>
